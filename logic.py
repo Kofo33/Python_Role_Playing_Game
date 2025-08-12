@@ -200,7 +200,7 @@ Attack: {enemy.attack_power}
 Defense: {enemy.defense}
 Level: {enemy.level}
 XP: {enemy.experience}''')
-            time.sleep(1)
+            time.sleep(1.5)
 
             print("=========== Battle Start! ============")
 
