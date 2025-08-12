@@ -51,6 +51,7 @@ class Player(Character):
         super().__init__(name, health, attack_power, defense)
         self.defending = False
         self.inventory = {"Health Potion": 2}
+        self.starting_hp = health  # Keep track of starting HP per level
 
     def choose_action(self, enemies):
         print("\nChoose an action:")
@@ -60,7 +61,7 @@ class Player(Character):
         print("4. Check Status")
         print("5. Use Item")
         print("6. Exit")
-        choice = input("> ")
+        choice = input("\n> ")
 
         if choice == "1":
             target = enemies[0] 
@@ -88,16 +89,29 @@ class Player(Character):
     def gain_experience(self, xp):
         self.experience += xp
         print(f"{self.name} gained {xp} XP.")
-        #self.check_level_up()
+        self.check_level_up()
 
     def check_level_up(self):
+        levels_gained = 0
+        total_hp_increase = 0
+
         while self.experience >= self.experience_to_next_level:
             self.level += 1
             self.attack_power += 2
             self.defense += 1
-            self.max_health += 5
-            self.health = self.max_health  
-            print(f"{self.name} leveled up to Level {self.level}!")
+
+            hp_increments = {2: 10, 3: 12, 4: 12, 5: 15}
+            increment = hp_increments.get(self.level, 20)
+            self.starting_hp += increment
+            total_hp_increase += increment
+
+            self.max_health = self.starting_hp
+            self.health = self.max_health
+            levels_gained += 1
+
+        if levels_gained > 0:
+            print(f"{self.name} leveled up {levels_gained} time(s)! HP increased by {total_hp_increase} to {self.max_health}.")
+
 
     def show_status(self):
         print(f"Name: {self.name}")
@@ -170,15 +184,31 @@ class Game:
         self.player = Player("Hero", 30, 8, 3)
         self.level_count = 1
 
+         # Enemy names by level range
+        self.enemy_names = {
+            1: "Goblin",
+            2: "Orc",
+            3: "Troll",
+            4: "Dark Knight",
+            5: "Dragon"
+        }
+
     def next_enemy(self):
         #Scale enemy stats based on level_count
+        enemy_name = self.enemy_names.get(self.level_count, "Goblin")
         health = 20 + self.level_count * 5
         attack = 6 + self.level_count
         defense = 2 + self.level_count // 2
-        return Enemy(f"Goblin Lv. {self.level_count}", health, attack, defense)
+        enemy = Enemy(f"{enemy_name} Lv. {self.level_count}", health, attack, defense)
+        enemy.level = self.level_count
+        return enemy
+
 
     def play(self):
         while self.player.is_alive():
+            if self.level_count > 5:
+                print("\nCongratulations! You completed all levels!")
+                break
             self.enemies = [self.next_enemy()]
             print(f"\n===== LEVEL {self.level_count} =====")
             print(f"A wild {self.enemies[0].name} appears!\n")
@@ -191,8 +221,8 @@ Attack: {self.player.attack_power}
 Defense: {self.player.defense} 
 Level: {self.player.level} 
 XP: {self.player.experience}''')
-        
-            print("Enemy Stats:")
+
+            print("\nEnemy Stats:")
             for enemy in self.enemies:
                 print(f'''Name: {enemy.name}
 Health: {enemy.health}
@@ -202,7 +232,7 @@ Level: {enemy.level}
 XP: {enemy.experience}''')
             time.sleep(1.5)
 
-            print("=========== Battle Start! ============")
+            print("\n=========== Battle Start! ============")
 
             # Battle loop
             while self.player.is_alive() and any(e.is_alive() for e in self.enemies):
@@ -221,10 +251,18 @@ XP: {enemy.experience}''')
             if self.player.is_alive():
                 print("You win!")
                 self.player.gain_experience(10 + self.level_count * 5)
-                self.level_count += 1
                 self.player.heal(5)  # Heal a bit after winning
+
+                self.level_count += 1  # increment level once
+
+                print("\nNext level starting soon...\n")
+                time.sleep(3)  # 3 seconds pause
+
             else:
                 print("You lost!")
+                break
+
+            time.sleep(1)
 
 
 if __name__ == "__main__":
